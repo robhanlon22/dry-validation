@@ -43,6 +43,29 @@ RSpec.describe Dry::Validation::Result do
       end
     end
 
+    describe "#filter" do
+      let(:result) do
+        Dry::Validation.Contract do
+          params { required(:contact).hash { required(:email).filled(:string) } }
+          rule { base.failure(text: "contact is invalid", code: :invalid_contact) }
+        end.call(contact: {})
+      end
+
+      it "keeps edits to a filtered set's error lists out of the original" do
+        errors.filter(:base?)[nil].first[:text] = "redacted"
+        errors.filter[:contact][:email].clear
+
+        expect(errors[nil]).to eql([{text: "contact is invalid", code: :invalid_contact}])
+        expect(errors[:contact]).to eql(email: ["is missing"])
+      end
+
+      it "builds a filtered set from the messages even after the original hash has been edited" do
+        errors[:contact].delete(:email)
+
+        expect(errors.filter[:contact]).to eql(email: ["is missing"])
+      end
+    end
+
     describe "#empty?" do
       let(:result) { Dry::Validation::Result.new(params) }
 

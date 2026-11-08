@@ -89,6 +89,32 @@ module Dry
         to_h
         self
       end
+
+      private
+
+      def messages_map(...)
+        hash = super
+        return hash if hash.empty?
+
+        # Sets can share message objects. Keep their cached path hashes and arrays
+        # separate so editing a filtered set cannot change the original.
+        hash.transform_values { copy_message_value(_1) }.freeze
+      end
+
+      def copy_message_value(value)
+        case value
+        when ::Array
+          value.map { copy_message_value(_1) }
+        when ::Hash
+          # Message metadata is opaque, even before localized text is evaluated.
+          text = value[:text]
+          return value.dup if text.is_a?(::String) || text.respond_to?(:call)
+
+          value.transform_values { copy_message_value(_1) }
+        else
+          value
+        end
+      end
     end
   end
 end

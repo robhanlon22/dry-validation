@@ -156,10 +156,20 @@ RSpec.describe Dry::Validation::Messages::Resolver, "#message" do
   end
 
   context "using :i18n" do
+    let(:locale) { :en }
+
     before do
       contract_class.config.messages.backend = :i18n
     end
 
     include_context "resolving"
+
+    it "passes comma-separated array tokens to callable translations" do
+      translation = ->(_key, colors: "", **) { colors.upcase }
+      I18n.backend.store_translations(:en, dry_validation: {errors: {rules: {allowed_colors: translation}}})
+
+      expect(resolver.message(:allowed_colors, path: [nil], tokens: {colors: %w[red green]}))
+        .to eql(["RED, GREEN", {}])
+    end
   end
 end

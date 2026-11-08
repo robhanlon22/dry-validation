@@ -61,7 +61,8 @@ module Dry
         # rubocop:disable Metrics/PerceivedComplexity
         def message(rule, path:, tokens: EMPTY_HASH, locale: nil, full: false)
           keys = path.to_a.compact
-          msg_opts = tokens.merge(path: keys, locale: locale || messages.default_locale)
+          parsed_tokens = parse_tokens(tokens)
+          msg_opts = parsed_tokens.merge(path: keys, locale: locale || messages.default_locale)
 
           if keys.empty?
             template, meta = messages["rules.#{rule}", msg_opts]
@@ -81,7 +82,6 @@ module Dry
             STR
           end
 
-          parsed_tokens = parse_tokens(tokens)
           text = template.(template.data(parsed_tokens))
 
           [message_text(text, path: path, locale: locale, full: full), meta]
